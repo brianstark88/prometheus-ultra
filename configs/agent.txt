@@ -1,0 +1,147 @@
+# Agent behavior configuration
+agent:
+  max_steps: 15
+  max_tokens: 4096
+  session_timeout: 3600  # 1 hour
+  
+  # LLM settings
+  ensemble_n: 1  # Number of parallel LLM calls for consensus
+  temperature_plan: 0.3
+  temperature_critic: 0.2
+  temperature_verify: 0.0
+  
+  # Loop safety
+  max_retries_per_action: 1
+  no_progress_threshold: 3
+  strategy_switch_enabled: true
+  
+  # Parallel execution
+  parallel_enabled: true
+  max_parallel_tasks: 4
+  parallel_timeout: 60
+  
+  # Budget and limits
+  budget_tokens: 50000
+  budget_web_requests: 20
+  budget_file_reads: 100
+
+# UI configuration
+ui:
+  theme: "dark"
+  font_size: "medium"
+  show_thinking_panel: true
+  show_metrics_bar: true
+  enable_voice_input: false
+  enable_voice_output: false
+  
+  # Internationalization
+  default_language: "en"
+  available_languages:
+    - "en"
+    - "es"
+    - "fr"
+    - "de"
+    - "zh"
+  
+  # Features
+  enable_export: true
+  enable_sessions: true
+  auto_scroll: true
+  
+# Performance settings
+performance:
+  eco_mode: false
+  eco_threshold_cpu: 70  # Switch to eco mode if CPU > 70%
+  eco_threshold_memory: 80  # Switch to eco mode if memory > 80%
+  
+  # Eco mode adjustments
+  eco_ensemble_n: 1
+  eco_temperature_boost: 0.1
+  eco_disable_multimodal: true
+  eco_reduce_parallel: true
+
+# Ethics and bias configuration
+ethics:
+  enabled: true
+  strictness: "medium"  # low, medium, high
+  
+  # Content filtering
+  blocked_topics:
+    - "illegal activities"
+    - "harmful content"
+    - "personal information"
+    - "financial advice"
+    - "medical diagnosis"
+  
+  # Bias detection
+  bias_checks_enabled: true
+  bias_categories:
+    - "gender"
+    - "race"
+    - "religion"
+    - "age"
+    - "disability"
+  
+  # Response adjustments
+  add_disclaimers: true
+  flag_uncertain_claims: true
+  
+# Observability
+observability:
+  logging_level: "INFO"
+  metrics_enabled: true
+  export_logs: true
+  log_retention_days: 30
+  
+  # Dashboard integration
+  export_ndjson: true
+  export_path: "dashboards/exporter.ndjson"
+  
+  # Metrics collection
+  collect_system_metrics: true
+  collect_performance_metrics: true
+  collect_confidence_metrics: true
+
+# Self-improvement
+self_improvement:
+  enabled: true
+  learning_file: ".ultra/learning.ndjson"
+  
+  # Auto-tuning parameters
+  auto_tune_temperature: true
+  auto_tune_ensemble_n: true
+  temperature_range: [0.1, 0.5]
+  ensemble_range: [1, 3]
+  
+  # Learning triggers
+  success_threshold: 0.8
+  confidence_threshold: 0.7
+  pattern_detection: true
+
+# Model fallback configuration
+models:
+  primary: "${LLM_MODEL}"
+  fallbacks:
+    - "llama2:7b"
+    - "mistral:7b"
+    - "codellama:7b"
+  
+  # Health checking
+  health_check_interval: 300  # 5 minutes
+  health_check_timeout: 10
+  max_retries: 3
+
+# Security settings
+security:
+  sandbox_root: "~"
+  allow_path_escapes: false
+  allow_dotfiles: false
+  
+  # Input validation
+  max_goal_length: 1000
+  strip_control_chars: true
+  block_injections: true
+  
+  # Destructive operations
+  destructive_confirmation_required: true
+  destructive_session_token_required: true

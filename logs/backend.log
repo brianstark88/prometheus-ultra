@@ -1,0 +1,55 @@
+INFO:     Will watch for changes in these directories: ['/Users/brian/agent_gptoss20b']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [3246] using WatchFiles
+2025-08-15 16:55:58,260 - api.app - INFO - No UI build found, skipping static file serving
+INFO:     Started server process [3251]
+INFO:     Waiting for application startup.
+2025-08-15 16:55:58,261 - api.app - INFO - Starting GOD-MODE Agent...
+2025-08-15 16:55:58,261 - api.tools - WARNING - No tool config found, loading defaults
+2025-08-15 16:55:58,305 - api.app - INFO - Initialized 6 tools
+INFO:     Application startup complete.
+2025-08-15 16:55:58,811 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-08-15 16:55:58,987 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-08-15 16:55:59,000 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-08-15 16:55:59,084 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49925 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49948 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49948 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49972 - "GET /auto/stream?goal=How%20many%20screenshots%20are%20there%20on%20my%20desktop%3F HTTP/1.1" 200 OK
+2025-08-15 16:56:16,196 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-08-15 16:56:20,281 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:50713 - "GET /auto/stream?goal=How%20many%20stars%20are%20there%20in%20our%20solar%20system%3F HTTP/1.1" 200 OK
+2025-08-15 17:02:01,759 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-08-15 17:02:05,884 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+WARNING:  WatchFiles detected changes in 'api/enhanced_planning.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-15 17:03:37,963 - api.app - INFO - Shutting down GOD-MODE Agent...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3251]
+2025-08-15 17:03:38,420 - api.app - INFO - No UI build found, skipping static file serving
+INFO:     Started server process [3986]
+INFO:     Waiting for application startup.
+2025-08-15 17:03:38,421 - api.app - INFO - Starting GOD-MODE Agent...
+2025-08-15 17:03:38,421 - api.tools - WARNING - No tool config found, loading defaults
+2025-08-15 17:03:38,463 - api.app - INFO - Initialized 6 tools
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'api/learning_system.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-15 17:03:43,817 - api.app - INFO - Shutting down GOD-MODE Agent...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3986]
+2025-08-15 17:03:44,164 - api.app - INFO - No UI build found, skipping static file serving
+INFO:     Started server process [3993]
+INFO:     Waiting for application startup.
+2025-08-15 17:03:44,165 - api.app - INFO - Starting GOD-MODE Agent...
+2025-08-15 17:03:44,165 - api.tools - WARNING - No tool config found, loading defaults
+2025-08-15 17:03:44,191 - api.app - INFO - Initialized 6 tools
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-15 17:06:12,341 - api.app - INFO - Shutting down GOD-MODE Agent...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3993]
+INFO:     Stopping reloader process [3246]

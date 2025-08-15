@@ -1,0 +1,121 @@
+tools:
+  # Core filesystem tools
+  list_files:
+    enabled: true
+    max_limit: 500
+    description: "List files and directories with sorting and filtering"
+    
+  read_file:
+    enabled: true
+    max_length: 65536
+    description: "Read file content with offset and length limits"
+    
+  count_files:
+    enabled: true
+    max_limit: 10000
+    description: "Count files in directory with optional filtering"
+    
+  count_dirs:
+    enabled: true
+    max_limit: 10000
+    description: "Count directories with optional filtering"
+    
+  delete_files:
+    enabled: false
+    require_confirm: true
+    max_limit: 1000
+    description: "Delete files matching pattern (DESTRUCTIVE)"
+    
+  # Core web tools
+  web_get:
+    enabled: true
+    timeout_s: 20
+    ua: "BrAIn/1.0"
+    blocked_domains: []
+    description: "Fetch and process web page content"
+    
+  # Core LLM tools
+  analyze:
+    enabled: true
+    model: "${LLM_MODEL}"
+    max_tokens: 1024
+    description: "LLM-based analysis of provided context"
+    
+  summarize:
+    enabled: true
+    model: "${LLM_MODEL}"
+    max_tokens: 512
+    description: "Hierarchical content summarization"
+    
+  # Multimodal plugins (optional)
+  image_info:
+    enabled: false
+    module: "api.tools.mm_image"
+    fn: "image_info"
+    description: "Extract image dimensions and EXIF data"
+    
+  image_ocr:
+    enabled: false
+    module: "api.tools.mm_image"
+    fn: "image_ocr"
+    description: "OCR text extraction from images"
+    
+  audio_info:
+    enabled: false
+    module: "api.tools.mm_audio"
+    fn: "audio_info"
+    description: "Audio file metadata extraction"
+    
+  transcribe_audio:
+    enabled: false
+    module: "api.tools.mm_audio"
+    fn: "transcribe_audio"
+    description: "Audio transcription using local models"
+    
+  # External API examples (optional)
+  weather_get:
+    enabled: false
+    module: "api.tools.ext_apis"
+    fn: "get_weather"
+    api_key: "${WEATHER_API_KEY}"
+    description: "Get weather information"
+    
+  stock_quote:
+    enabled: false
+    module: "api.tools.ext_apis"
+    fn: "get_stock_quote"
+    api_key: "${FINANCE_API_KEY}"
+    description: "Get stock quote information"
+    
+  # Example plugins
+  csv_stats:
+    enabled: false
+    module: "api.tools.extras_example"
+    fn: "csv_stats"
+    description: "CSV file statistics and analysis"
+    
+  onnx_infer:
+    enabled: false
+    module: "api.tools.extras_example"
+    fn: "onnx_inference"
+    model_path: "models/example.onnx"
+    description: "ONNX model inference"
+
+# Plugin loading policies
+policies:
+  # Security policies
+  require_sandbox: true
+  allow_dotfiles: false
+  max_file_size_mb: 100
+  
+  # Resource limits
+  max_concurrent_tools: 4
+  timeout_default: 30
+  
+  # Destructive operations
+  require_confirmation: true
+  confirmation_timeout: 300  # 5 minutes
+  
+  # Rate limiting
+  calls_per_minute: 60
+  calls_per_hour: 1000

@@ -1,0 +1,25 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+httpx==0.25.2
+pydantic==2.5.1
+python-multipart==0.0.6
+beautifulsoup4==4.12.2
+lxml==4.9.3
+psutil==5.9.6
+pyyaml==6.0.1
+python-dotenv==1.0.0
+opencv-python==4.8.1.78
+pillow==10.1.0
+soundfile==0.12.1
+pytesseract==0.3.10
+numpy==1.25.2
+matplotlib==3.8.2
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Optional AI/ML
+onnxruntime==1.16.3
+transformers==4.36.0
