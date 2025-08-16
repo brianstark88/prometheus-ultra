@@ -13,6 +13,8 @@ interface ThinkingStep {
   type: string;
   data: any;
   timestamp: number;
+  thought?: string;
+  step_type?: string;
 }
 
 interface HealthStatus {
@@ -22,6 +24,7 @@ interface HealthStatus {
     healthy_models: string[];
     system_healthy: boolean;
   };
+  enhanced_mode: boolean;
 }
 
 function App() {
@@ -29,7 +32,7 @@ function App() {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [showThinking, setShowThinking] = useState(false);
+  const [showThinking, setShowThinking] = useState(true); // Default to true to see thinking
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -95,6 +98,41 @@ function App() {
         }
       };
 
+      // Handle new thinking events
+      eventSource.addEventListener('thinking', (event) => {
+        try {
+          const data = JSON.parse((event as MessageEvent).data);
+          currentThinking.push({
+            type: 'thinking',
+            data,
+            timestamp: Date.now(),
+            thought: data.thought,
+            step_type: data.step_type
+          });
+          updateAssistantMessage({ thinking: [...currentThinking] });
+        } catch (e) {
+          console.error('Failed to parse thinking:', e);
+        }
+      });
+
+      // Handle reasoning events
+      eventSource.addEventListener('reasoning', (event) => {
+        try {
+          const data = JSON.parse((event as MessageEvent).data);
+          currentThinking.push({
+            type: 'reasoning',
+            data,
+            timestamp: Date.now(),
+            thought: `🤔 ${data.reasoning}`,
+            step_type: 'reasoning'
+          });
+          updateAssistantMessage({ thinking: [...currentThinking] });
+        } catch (e) {
+          console.error('Failed to parse reasoning:', e);
+        }
+      });
+
+      // Handle existing events
       ['status', 'plan', 'critic', 'exec', 'obs', 'hyp', 'bb', 'met'].forEach(eventType => {
         eventSource.addEventListener(eventType, (event) => {
           try {
@@ -119,7 +157,9 @@ function App() {
           currentThinking.push({
             type: 'final',
             data,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            thought: `🎉 ${data.success ? 'SUCCESS' : 'COMPLETED'}: ${finalResult}`,
+            step_type: 'final'
           });
 
           updateAssistantMessage({
@@ -166,21 +206,103 @@ function App() {
   };
 
   const formatThinkingData = (step: ThinkingStep) => {
-    if (step.type === 'status') {
-      return `Status: ${step.data.status}`;
-    } else if (step.type === 'plan') {
-      return `Planning: ${step.data.next_action}(${JSON.stringify(step.data.args)})`;
-    } else if (step.type === 'exec') {
-      return `Executing: ${step.data.tool}`;
-    } else if (step.type === 'obs') {
-      return `Observation: ${step.data.observation?.substring(0, 100)}...`;
-    } else if (step.type === 'final') {
-      return `Result: ${step.data.result}`;
+    // Handle new thinking format - prioritize actual thoughts
+    if (step.type === 'thinking' && step.thought) {
+      return step.thought;
+    } else if (step.type === 'reasoning' && step.thought) {
+      return step.thought;
     }
+    
+    // Handle existing event types with cleaner formatting
+    if (step.type === 'status') {
+      const statusEmojis: Record<string, string> = {
+        'starting': '🚀',
+        'planning': '🧠',
+        'executing': '⚡',
+        'verifying_hypothesis': '🔍'
+      };
+      const emoji = statusEmojis[step.data.status] || '⚙️';
+      return `${emoji} ${step.data.status.replace('_', ' ').toUpperCase()}`;
+    } else if (step.type === 'plan') {
+      const action = step.data.next_action || 'unknown';
+      const rationale = step.data.rationale;
+      if (rationale && rationale.length < 100) {
+        return `📋 Plan: ${action} - ${rationale}`;
+      }
+      return `📋 Plan: ${action}`;
+    } else if (step.type === 'exec') {
+      return `🔨 Executing: ${step.data.tool}`;
+    } else if (step.type === 'obs') {
+      if (step.data.error_class) {
+        return `❌ Error: ${step.data.error_class}`;
+      } else {
+        // Clean up observation display
+        let obs = step.data.observation;
+        if (typeof obs === 'string') {
+          // For knowledge questions, show the actual answer
+          if (obs.includes('solar system') || obs.includes('star')) {
+            return `✅ Answer: ${obs.substring(0, 200)}${obs.length > 200 ? '...' : ''}`;
+          }
+          return `✅ Result: ${obs.substring(0, 100)}${obs.length > 100 ? '...' : ''}`;
+        }
+        return `✅ Result: ${step.data.signature}`;
+      }
+    } else if (step.type === 'final') {
+      if (step.thought) {
+        return step.thought;
+      }
+      return `🎉 ${step.data.success ? 'SUCCESS' : 'COMPLETED'}: ${step.data.result}`;
+    } else if (step.type === 'hyp') {
+      // Skip showing raw hypothesis data
+      if (step.data.expected_match) {
+        return `✅ Results match expectations`;
+      } else {
+        return `⚠️ Results differ from expectations, but may still be useful`;
+      }
+    } else if (step.type === 'bb' || step.type === 'met') {
+      // Skip showing raw blackboard and metrics data in thinking panel
+      return null;
+    }
+    
+    // Fallback for unknown types - but don't show session IDs
+    if (step.data && typeof step.data === 'object' && step.data.session_id) {
+      return null; // Hide technical SSE data
+    }
+    
     return `${step.type}: ${JSON.stringify(step.data).substring(0, 50)}...`;
   };
 
-  // Styles
+  const getThinkingStepColor = (step: ThinkingStep) => {
+    if (step.step_type) {
+      const colors: Record<string, string> = {
+        'goal_analysis': '#3b82f6',
+        'goal_classification': '#3b82f6',
+        'planning': '#8b5cf6',
+        'plan_decision': '#8b5cf6',
+        'plan_reasoning': '#8b5cf6',
+        'execution': '#f59e0b',
+        'execution_start': '#f59e0b',
+        'success': '#10b981',
+        'error': '#ef4444',
+        'final': '#06d6a0',
+        'reasoning': '#8b5cf6'
+      };
+      return colors[step.step_type] || '#6b7280';
+    }
+    
+    const typeColors: Record<string, string> = {
+      'status': '#06b6d4',
+      'plan': '#8b5cf6',
+      'exec': '#f59e0b',
+      'obs': '#10b981',
+      'final': '#06d6a0',
+      'thinking': '#8b5cf6',
+      'reasoning': '#8b5cf6'
+    };
+    return typeColors[step.type] || '#6b7280';
+  };
+
+  // Styles (keeping your existing styles but adding thinking styles)
   const styles = {
     container: {
       minHeight: '100vh',
@@ -252,6 +374,14 @@ function App() {
       height: '8px',
       borderRadius: '50%',
       backgroundColor: health?.ok ? '#10b981' : '#ef4444',
+    },
+    enhancedBadge: {
+      fontSize: '10px',
+      backgroundColor: health?.enhanced_mode ? '#3b82f6' : '#6b7280',
+      color: 'white',
+      padding: '2px 6px',
+      borderRadius: '4px',
+      fontWeight: '500',
     },
     button: {
       padding: '6px 12px',
@@ -363,6 +493,8 @@ function App() {
       padding: '16px',
       border: '1px solid #e5e7eb',
       marginBottom: '16px',
+      maxHeight: '400px',
+      overflowY: 'auto' as const,
     },
     thinkingHeader: {
       display: 'flex',
@@ -384,12 +516,14 @@ function App() {
     },
     thinkingStep: {
       fontSize: '14px',
-      color: '#6b7280',
+      color: '#374151',
       fontFamily: 'SF Mono, Monaco, Consolas, monospace',
       backgroundColor: '#ffffff',
-      borderRadius: '4px',
-      padding: '8px',
+      borderRadius: '6px',
+      padding: '8px 12px',
       border: '1px solid #e5e7eb',
+      borderLeftWidth: '4px',
+      lineHeight: 1.4,
     },
     messageText: {
       color: '#111827',
@@ -472,10 +606,10 @@ function App() {
       <header style={styles.header}>
         <div style={styles.headerContent}>
           <div style={styles.logoSection}>
-            <div style={styles.logo}>🔱</div>
+            <div style={styles.logo}>🧠</div>
             <div style={styles.titleSection}>
-              <h1 style={styles.title}>GOD-MODE Agent</h1>
-              <p style={styles.subtitle}>v3.2 Prometheus ULTRA</p>
+              <h1 style={styles.title}>StarkMatter</h1>
+              <p style={styles.subtitle}>The Invisible Force Behind Everything</p>
             </div>
           </div>
           
@@ -485,6 +619,9 @@ function App() {
                 <div style={styles.statusDot} />
                 <span style={{ color: '#6b7280' }}>
                   {health.tools_loaded} tools, {health.models.healthy_models.length} models
+                </span>
+                <span style={styles.enhancedBadge}>
+                  {health.enhanced_mode ? 'ENHANCED' : 'STANDARD'}
                 </span>
               </div>
             )}
@@ -512,18 +649,18 @@ function App() {
       <main style={styles.main}>
         {messages.length === 0 ? (
           <div style={styles.welcomeScreen}>
-            <div style={styles.welcomeLogo}>🔱</div>
-            <h2 style={styles.welcomeTitle}>Hello! I'm your GOD-MODE Agent</h2>
+            <div style={styles.welcomeLogo}>🧠</div>
+            <h2 style={styles.welcomeTitle}>Hello! I'm StarkMatter</h2>
             <p style={styles.welcomeSubtitle}>
-              I can help you with file operations, web research, data analysis, and more. What would you like me to help you with?
+              The invisible force behind everything. I can help you with file operations, web research, data analysis, and more. Watch me think in real-time!
             </p>
             
             <div style={styles.examplesGrid}>
               {[
+                'How many stars are there in the solar system?',
                 'Count files in my home directory',
-                'List files in ~/Desktop',
                 'Find the most recent file in ~/Downloads',
-                'Get latest news headlines'
+                'What is the capital of France?'
               ].map((example, idx) => (
                 <button
                   key={idx}
@@ -557,22 +694,31 @@ function App() {
                   </div>
                 ) : (
                   <div style={styles.messageRow}>
-                    <div style={{ ...styles.avatar, ...styles.assistantAvatar }}>🔱</div>
+                    <div style={{ ...styles.avatar, ...styles.assistantAvatar }}>🧠</div>
                     <div style={styles.messageContent}>
                       {showThinking && message.thinking && message.thinking.length > 0 && (
                         <div style={styles.thinkingPanel}>
                           <div style={styles.thinkingHeader}>
                             <div style={styles.thinkingDot} />
                             <span style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                              Thinking...
+                              Agent Thinking {message.isStreaming ? '(Live)' : '(Complete)'}
                             </span>
                           </div>
                           <div style={styles.thinkingSteps}>
-                            {message.thinking.slice(-5).map((step, idx) => (
-                              <div key={idx} style={styles.thinkingStep}>
-                                {formatThinkingData(step)}
-                              </div>
-                            ))}
+                            {message.thinking.slice(-10)
+                              .map((step, idx) => ({ step, idx, formatted: formatThinkingData(step) }))
+                              .filter(item => item.formatted !== null)
+                              .map(({ step, idx, formatted }) => (
+                                <div 
+                                  key={idx} 
+                                  style={{
+                                    ...styles.thinkingStep,
+                                    borderLeftColor: getThinkingStepColor(step)
+                                  }}
+                                >
+                                  {formatted}
+                                </div>
+                              ))}
                           </div>
                         </div>
                       )}
@@ -584,7 +730,7 @@ function App() {
                             <div style={{ ...styles.loadingDot, animationDelay: '0.1s' }} />
                             <div style={{ ...styles.loadingDot, animationDelay: '0.2s' }} />
                           </div>
-                          <span style={{ fontSize: '14px' }}>Thinking...</span>
+                          <span style={{ fontSize: '14px' }}>Processing...</span>
                         </div>
                       ) : (
                         <p style={styles.messageText}>{message.content}</p>
@@ -666,7 +812,7 @@ function App() {
           </form>
           
           <div style={styles.footerInfo}>
-            <span>GOD-MODE Agent can make mistakes. Consider checking important information.</span>
+            <span>StarkMatter - The Invisible Force Behind Everything</span>
             <span>{health?.ok ? 'Connected' : 'Disconnected'}</span>
           </div>
         </div>

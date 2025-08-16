@@ -24,6 +24,16 @@ from .utils.fallback import create_fallback_manager
 from .utils.parallel import default_executor, create_batch_tasks, merge_batch_observations, validate_batch_safety, BatchCoordinator
 from .utils.sandbox import validate_tool_args
 
+# Enhanced imports for GOD-MODE
+try:
+    from .planning_enhanced import EnhancedPlanningAgent
+    from .utils.learning import LearningSystem
+    ENHANCED_MODE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Enhanced planning not available - using standard mode")
+    ENHANCED_MODE = False
+
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +44,70 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# Enhanced SSE functions for reasoning
+async def emit_thinking(sse_manager: SSEManager, thought: str, step_type: str = "general"):
+    """Emit a thinking step with human-readable content."""
+    data = {
+        "thought": thought,
+        "step_type": step_type,
+        "timestamp": time.time()
+    }
+    await sse_manager.emit("thinking", data)
+
+
+async def emit_reasoning(sse_manager: SSEManager, step: str, reasoning: str, details: Dict = None):
+    """Emit human-readable reasoning step."""
+    data = {
+        "step": step,
+        "reasoning": reasoning,
+        "timestamp": time.time()
+    }
+    if details:
+        data["details"] = details
+    
+    await sse_manager.emit("reasoning", data)
+
+
+def is_knowledge_question(goal: str) -> bool:
+    """Detect if this is a knowledge question that doesn't need tools."""
+    knowledge_indicators = [
+        'how many', 'what is', 'what are', 'who is', 'when did', 'where is',
+        'why does', 'explain', 'define', 'what does', 'how does',
+        'stars in the solar system', 'planets in', 'capital of',
+        'who invented', 'when was', 'how tall', 'how old'
+    ]
+    
+    goal_lower = goal.lower()
+    return any(indicator in goal_lower for indicator in knowledge_indicators)
+
+
+def create_knowledge_plan(goal: str) -> Dict[str, Any]:
+    """Create a plan that uses analyze tool for knowledge questions."""
+    return {
+        "strategy": "knowledge_response",
+        "subgoals": ["Answer the knowledge question directly"],
+        "success_criteria": "Provide accurate, helpful information",
+        "next_action": "analyze",
+        "args": {
+            "prompt": f"Answer this question accurately and completely: {goal}",
+            "context": "This is a knowledge question that requires a direct factual answer."
+        },
+        "expected_observation": "Direct answer to the knowledge question",
+        "confidence": 0.9,
+        "rationale": "Knowledge question detected - using analyze tool for direct response",
+        "tool_chain": ["analyze"]
+    }
+
+
+def is_simple_goal(goal: str) -> bool:
+    """Check if goal can be handled by simple planner."""
+    simple_patterns = [
+        'count files', 'list files', 'count dirs',
+        'how many', 'show me files', 'number of'
+    ]
+    return any(pattern in goal.lower() for pattern in simple_patterns)
 
 
 @asynccontextmanager
@@ -57,7 +131,7 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(
     title="GOD-MODE Deep-Research Agent",
-    description="v3.2 Prometheus ULTRA - Advanced LLM agent with loop safety",
+    description="v3.2 Prometheus ULTRA - Advanced LLM agent with loop safety and learning",
     version="3.2.0",
     lifespan=lifespan
 )
@@ -79,11 +153,127 @@ fallback_manager = create_fallback_manager(
     host=os.getenv('OLLAMA_HOST', 'http://127.0.0.1:11434')
 )
 
+# Initialize both standard and enhanced planning agents
 planning_agent = PlanningAgent(fallback_manager)
+if ENHANCED_MODE:
+    enhanced_planning_agent = EnhancedPlanningAgent(fallback_manager)
+    learning_system = LearningSystem()
+    logger.info("Enhanced GOD-MODE features enabled")
+else:
+    enhanced_planning_agent = None
+    learning_system = None
+
 batch_coordinator = BatchCoordinator(default_executor)
 
 # Session management
 active_sessions: Dict[str, SSEManager] = {}
+
+
+async def enhanced_planning_step(goal: str, session_state, sse: SSEManager) -> Dict[str, Any]:
+    """Enhanced planning with intelligent tool chaining."""
+    
+    # Handle knowledge questions directly
+    if is_knowledge_question(goal):
+        await emit_thinking(sse, "🧠 This is a knowledge question - I can answer this directly using my training data", "goal_classification")
+        knowledge_plan = create_knowledge_plan(goal)
+        await emit_plan(sse, knowledge_plan)
+        return knowledge_plan
+    
+    # Try simple planner for basic operations first (keep fast path)
+    simple_plan = None
+    try:
+        simple_plan = create_simple_plan(goal)
+        
+        # Check if simple plan is sufficient
+        if is_simple_goal(goal) and simple_plan.get('confidence', 0) > 0.8:
+            await emit_thinking(sse, "⚡ This is a simple file operation - I'll use fast tools", "goal_classification")
+            await emit_plan(sse, simple_plan)
+            return simple_plan
+    except Exception as e:
+        logger.info(f"Simple planner skipped: {e}")
+    
+    # Use enhanced LLM planning for complex goals
+    if ENHANCED_MODE and enhanced_planning_agent:
+        try:
+            await emit_thinking(sse, "🔄 This is a complex task - I'll plan multiple steps", "goal_classification")
+            enhanced_plan = await enhanced_planning_agent.plan_with_chaining(
+                goal, session_state, max_steps_ahead=3
+            )
+            
+            # Use learning insights to improve plan
+            if learning_system:
+                goal_type = learning_system._classify_goal_type(goal)
+                learned_pattern = learning_system.get_pattern_for_goal_type(goal_type)
+                
+                if learned_pattern and 'tool_chain' not in enhanced_plan:
+                    enhanced_plan['tool_chain'] = learned_pattern
+                    enhanced_plan['rationale'] = enhanced_plan.get('rationale', '') + f" (Using learned pattern: {' → '.join(learned_pattern)})"
+                    await emit_thinking(sse, f"🧠 Applied learned pattern: {' → '.join(learned_pattern)}", "learning_applied")
+            
+            await emit_plan(sse, enhanced_plan)
+            return enhanced_plan
+        
+        except Exception as e:
+            logger.error(f"Enhanced planning failed: {e}")
+            await emit_thinking(sse, f"⚠️ Enhanced planning failed: {str(e)}", "planning_error")
+    
+    # Fallback to standard LLM planning
+    try:
+        await emit_thinking(sse, "🔄 Using standard LLM planning", "fallback_planning")
+        standard_plan = await planning_agent.plan(goal, session_state)
+        await emit_plan(sse, standard_plan)
+        return standard_plan
+    except Exception as e:
+        logger.error(f"Standard planning failed: {e}")
+        await emit_thinking(sse, f"⚠️ Standard planning failed: {str(e)}", "planning_error")
+    
+    # Final fallback
+    if simple_plan:
+        await emit_thinking(sse, "🔄 Using simple plan as final fallback", "final_fallback")
+        await emit_plan(sse, simple_plan)
+        return simple_plan
+    else:
+        await emit_thinking(sse, "🔄 Creating emergency fallback plan", "emergency_fallback")
+        fallback_plan = planning_agent._create_fallback_plan(goal)
+        await emit_plan(sse, fallback_plan)
+        return fallback_plan
+
+
+async def complete_session_with_learning(
+    sse: SSEManager,
+    session_id: str,
+    goal: str,
+    session_state,
+    session_metrics,
+    final_result: str,
+    success: bool,
+    confidence: float
+):
+    """Complete session and log learning data."""
+    
+    # Emit final result
+    await emit_final(sse, final_result, success, confidence)
+    
+    # Log to learning system if available
+    if ENHANCED_MODE and learning_system:
+        try:
+            learning_system.log_session_outcome(
+                session_id=session_id,
+                goal=goal,
+                session_state=session_state,
+                session_metrics=session_metrics,
+                final_result=final_result,
+                success=success,
+                confidence=confidence
+            )
+            
+            # Auto-tune parameters periodically
+            if len(learning_system._session_outcomes) % 25 == 0:
+                tuning_params = learning_system.auto_tune_parameters()
+                logger.info(f"Auto-tuned parameters: {tuning_params}")
+        
+        except Exception as e:
+            logger.error(f"Learning system error: {e}")
 
 
 @app.get("/health")
@@ -96,12 +286,29 @@ async def health_check():
         # Check model health
         model_status = await fallback_manager.get_system_status()
         
+        # Learning system status
+        learning_status = None
+        if ENHANCED_MODE and learning_system:
+            try:
+                stats = learning_system.get_stats()
+                learning_status = {
+                    "enabled": True,
+                    "sessions_logged": stats.get("total_sessions", 0),
+                    "success_rate": stats.get("success_rate", 0.0)
+                }
+            except:
+                learning_status = {"enabled": True, "error": "Failed to get stats"}
+        else:
+            learning_status = {"enabled": False}
+        
         return {
             "ok": True,
             "timestamp": time.time(),
             "tools_loaded": tools_count,
             "models": model_status,
-            "active_sessions": len(active_sessions)
+            "active_sessions": len(active_sessions),
+            "enhanced_mode": ENHANCED_MODE,
+            "learning_system": learning_status
         }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
@@ -138,9 +345,10 @@ async def auto_stream(
     # Start the agent loop
     async def agent_loop():
         try:
-            await run_agent_loop(sse, goal, max_steps, destructive, session_id)
+            await run_enhanced_agent_loop(sse, goal, max_steps, destructive, session_id)
         except Exception as e:
             logger.error(f"Agent loop failed: {e}")
+            await emit_thinking(sse, f"💥 Unexpected error: {str(e)}", "system_error")
             await emit_final(sse, f"Agent failed: {str(e)}", False, 0.0, ["Check logs for details"])
         finally:
             await cleanup()
@@ -161,68 +369,90 @@ async def auto_stream(
     )
 
 
-async def run_agent_loop(
+async def run_enhanced_agent_loop(
     sse: SSEManager,
     goal: str,
     max_steps: int,
     destructive: bool,
     session_id: str
 ):
-    """Run the main agent loop with strict SSE ordering."""
+    """Enhanced agent loop with visible reasoning."""
     session_state = state_manager.get_session(session_id)
     session_metrics = metrics_manager.get_session_metrics(session_id)
+    session_metrics.start_time = time.time()
     tool_registry = get_tool_registry()
     
     step = 0
     
     try:
         await emit_status(sse, "starting", {"goal": goal, "max_steps": max_steps})
+        await emit_thinking(sse, f"🎯 Goal: {goal}", "goal_analysis")
         
         while step < max_steps:
             step += 1
             step_start_time = time.time()
             
             await emit_status(sse, "planning", {"step": step})
+            await emit_thinking(sse, f"📋 Step {step}: Planning my approach...", "planning")
             
-            # PLANNER - Try simple planner first
-            try:
-                from .simple_planner import create_simple_plan
-                plan = create_simple_plan(goal)
-                await emit_plan(sse, plan)
-            except:
-                plan = await planning_agent.plan(goal, session_state)
-                await emit_plan(sse, plan)
+            # ENHANCED PLANNING with reasoning
+            plan = await enhanced_planning_step(goal, session_state, sse)
             
-            # CRITIC - Use simple critic for basic operations
-            from .simple_critic import simple_critic_review
+            # Emit reasoning about the plan
+            next_action = plan.get('next_action', '')
+            plan_rationale = plan.get('rationale', 'No rationale provided')
+            
+            await emit_thinking(sse, f"💡 Plan: I'll use the '{next_action}' tool", "plan_decision")
+            await emit_thinking(sse, f"🤔 Reasoning: {plan_rationale}", "plan_reasoning")
+            
+            # Show tool chain if available
+            if plan.get('tool_chain') and len(plan['tool_chain']) > 1:
+                await emit_thinking(sse, f"🔗 Tool chain: {' → '.join(plan['tool_chain'])}", "tool_chain")
+            
+            # ENHANCED CRITIC with reasoning
+            await emit_thinking(sse, "🔍 Reviewing my plan for safety and efficiency...", "critic_review")
+            
             try:
-                critic_result = simple_critic_review(plan, tool_registry.tools)
+                if ENHANCED_MODE and enhanced_planning_agent:
+                    critic_result = await enhanced_planning_agent.critique(plan, session_state, max_steps - step)
+                else:
+                    from .simple_critic import simple_critic_review
+                    critic_result = simple_critic_review(plan, tool_registry.tools)
+                
+                if critic_result.get('approved', True):
+                    await emit_thinking(sse, "✅ Plan approved - proceeding with execution", "critic_approval")
+                else:
+                    changes = critic_result.get('changes', [])
+                    await emit_thinking(sse, f"⚠️ Plan needs changes: {changes}", "critic_changes")
+                
                 await emit_critic(sse, critic_result)
             except Exception as e:
-                # Fallback to always approve if critic fails
-                critic_result = {"approved": True, "changes": [], "reasoning": "Critic bypassed due to error"}
+                await emit_thinking(sse, f"⚠️ Critic review failed, proceeding anyway: {str(e)}", "critic_error")
+                critic_result = {"approved": True, "changes": [], "reasoning": f"Critic bypassed due to error: {str(e)}"}
                 await emit_critic(sse, critic_result)
             
             # Apply critic changes if needed
             if not critic_result['approved']:
-                # For now, just log the changes - could implement plan modification
                 logger.info(f"Critic suggested changes: {critic_result['changes']}")
             
-            # EXECUTE
+            # EXECUTE with reasoning
             await emit_status(sse, "executing")
-            
-            next_action = plan.get('next_action', '')
             args = plan.get('args', {})
-            expected_obs = plan.get('expected_observation', '')
+            
+            await emit_thinking(sse, f"🔨 Executing: {next_action} with args {args}", "execution_start")
             
             # Check for batch execution
             if isinstance(args, list) and len(args) > 1:
-                # Parallel batch execution
+                await emit_thinking(sse, f"⚡ Running {len(args)} operations in parallel", "batch_execution")
+                
                 observations, error_classes, signatures = await execute_batch(
                     sse, next_action, args, tool_registry, session_state, destructive
                 )
                 
-                # Merge batch observations
+                # Batch result reasoning
+                success_count = sum(1 for obs in observations if obs is not None)
+                await emit_thinking(sse, f"📊 Batch completed: {success_count}/{len(observations)} operations successful", "batch_result")
+                
                 merged_obs = merge_batch_observations([
                     {"idx": i, "success": obs is not None, "result": obs, "error": err}
                     for i, (obs, err) in enumerate(zip(observations, error_classes))
@@ -231,7 +461,6 @@ async def run_agent_loop(
                 await emit_obs_batch(sse, observations, signatures, error_classes)
                 session_state.add_observation(merged_obs)
                 
-                # Create ledger entry for batch
                 ledger_entry = LedgerEntry(
                     step=step,
                     action=f"{next_action}_batch",
@@ -244,22 +473,26 @@ async def run_agent_loop(
                 )
                 
             else:
-                # Single tool execution
+                # Single tool execution with reasoning
                 observation, error_class, signature = await execute_single_tool(
                     sse, next_action, args, tool_registry, session_state, destructive
                 )
                 
+                if error_class:
+                    await emit_thinking(sse, f"❌ Tool execution failed: {error_class}", "execution_error")
+                else:
+                    await emit_thinking(sse, f"✅ Tool executed successfully, got: {signature}", "execution_success")
+                
                 await emit_obs(sse, observation, signature, error_class)
                 session_state.add_observation(str(observation))
                 
-                # Create ledger entry
                 args_key = session_state.canonicalize_args(next_action, args)
                 ledger_entry = LedgerEntry(
                     step=step,
                     action=next_action,
                     args=args,
                     args_key=args_key,
-                    expected=expected_obs,
+                    expected=plan.get('expected_observation', ''),
                     status="ok" if error_class is None else "error",
                     obs_signature=signature,
                     error_class=error_class
@@ -269,17 +502,26 @@ async def run_agent_loop(
             session_state.add_ledger_entry(ledger_entry)
             session_state.mark_attempt(next_action, args, success=ledger_entry.status == "ok")
             
-            # HYP (Hypothesis check)
+            # HYP (Hypothesis check) with reasoning
             await emit_status(sse, "verifying_hypothesis")
+            await emit_thinking(sse, "🔍 Checking if results match expectations...", "hypothesis_check")
+            
+            expected_obs = plan.get('expected_observation', '')
             hypothesis_result = check_hypothesis(expected_obs, signature, observation)
+            
+            if hypothesis_result.get('expected_match'):
+                await emit_thinking(sse, "✅ Results match expectations", "hypothesis_success")
+            else:
+                await emit_thinking(sse, "⚠️ Results differ from expectations, but may still be useful", "hypothesis_mismatch")
+            
             await emit_hyp(sse, hypothesis_result)
             
-            # Update blackboard
+            # Update blackboard with reasoning
             if ledger_entry.status == "ok":
                 fact = f"Step {step}: {next_action} completed successfully"
                 session_state.add_fact(fact)
+                await emit_thinking(sse, f"📝 Added to knowledge: {fact}", "blackboard_update")
             
-            # BB (Blackboard)
             await emit_blackboard(sse, session_state.blackboard)
             
             # MET (Metrics)
@@ -292,49 +534,59 @@ async def run_agent_loop(
             all_metrics = metrics_manager.collect_all_metrics(session_id)
             await emit_metrics(sse, all_metrics)
             
-            # VERIFIER - Use LLM-powered verifier
+            # ENHANCED VERIFIER with reasoning
+            await emit_thinking(sse, "🎯 Checking if I've accomplished the goal...", "verification_start")
+            
             try:
-                # Check if last step was successful (no error_class)
                 last_successful = (
                     session_state.step_ledger and 
                     session_state.step_ledger[-1].status == "ok"
                 )
                 
-                # Import and use LLM verifier
-                from .simple_verifier import simple_verify
-                verification = simple_verify(goal, session_state.last_obs, last_successful)
+                if ENHANCED_MODE and enhanced_planning_agent:
+                    verification = await enhanced_planning_agent.verify(goal, session_state.last_obs)
+                    
+                    # Apply learning-based confidence adjustment
+                    if learning_system:
+                        base_confidence = verification['confidence']
+                        overall_success_rate = learning_system.get_tool_success_rate('overall') or 0.5
+                        adjusted_confidence = min(1.0, base_confidence * (1 + overall_success_rate - 0.5))
+                        verification['confidence'] = adjusted_confidence
+                        await emit_thinking(sse, f"🧠 Adjusted confidence based on learning: {base_confidence:.2f} → {adjusted_confidence:.2f}", "confidence_adjustment")
+                else:
+                    from .simple_verifier import simple_verify
+                    verification = simple_verify(goal, session_state.last_obs, last_successful)
+                    
             except Exception as e:
                 logger.error(f"Verifier failed: {e}")
-                # Fallback verifier
+                await emit_thinking(sse, f"⚠️ Verification failed, using fallback: {str(e)}", "verification_error")
                 verification = {
                     "finish": True,
                     "result": "Task completed. The results are shown in the detailed information above.",
-                    "confidence": 0.6
-                }
-            except Exception as e:
-                # Fallback verifier
-                verification = {
-                    "finish": True,
-                    "result": "Task completed (verifier bypassed due to error)",
                     "confidence": 0.6
                 }
             
             session_state.update_confidence(verification['confidence'])
             session_metrics.record_confidence(verification['confidence'])
             
+            # Reasoning about completion
             if verification['finish']:
-                await emit_final(
-                    sse,
-                    verification['result'],
-                    True,
-                    verification['confidence']
+                await emit_thinking(sse, f"🎉 Goal accomplished! Confidence: {verification['confidence']:.1%}", "completion_success")
+                await emit_thinking(sse, f"📋 Final result: {verification['result']}", "final_result")
+                
+                await complete_session_with_learning(
+                    sse, session_id, goal, session_state, session_metrics,
+                    verification['result'], True, verification['confidence']
                 )
                 return
+            else:
+                await emit_thinking(sse, "🔄 Goal not yet complete, continuing...", "continue_processing")
             
             # Check for no progress
             if session_state.should_switch_strategy():
+                await emit_thinking(sse, "🔄 Switching strategy due to lack of progress", "strategy_switch")
                 session_state.reset_no_progress()
-                # Force analyze on last observation
+                
                 analyze_obs = session_state.last_obs[-1] if session_state.last_obs else "No recent observations"
                 analyze_result, _, _ = await execute_single_tool(
                     sse, "analyze", 
@@ -344,17 +596,20 @@ async def run_agent_loop(
                 session_state.add_observation(str(analyze_result))
         
         # Max steps reached
-        await emit_final(
-            sse,
+        await emit_thinking(sse, f"⏰ Reached maximum steps ({max_steps})", "max_steps_reached")
+        await complete_session_with_learning(
+            sse, session_id, goal, session_state, session_metrics,
             f"Reached maximum steps ({max_steps}). Partial progress made.",
-            False,
-            0.5,
-            ["Consider breaking down the goal into smaller parts", "Try a more specific request"]
+            False, 0.5
         )
     
     except Exception as e:
         logger.error(f"Agent loop error: {e}")
-        await emit_final(sse, f"Agent error: {str(e)}", False, 0.0)
+        await emit_thinking(sse, f"💥 Unexpected error: {str(e)}", "system_error")
+        await complete_session_with_learning(
+            sse, session_id, goal, session_state, session_metrics,
+            f"Agent error: {str(e)}", False, 0.0
+        )
 
 
 async def execute_single_tool(
@@ -517,11 +772,73 @@ def classify_tool_error(error: Exception) -> str:
         return "execution_error"
 
 
+# Learning System API Endpoints (GOD-MODE)
+@app.get("/learning/stats")
+async def get_learning_stats():
+    """Get learning system statistics."""
+    if not ENHANCED_MODE or not learning_system:
+        raise HTTPException(status_code=501, detail="Learning system not available")
+    
+    try:
+        stats = learning_system.get_stats()
+        return {"success": True, "stats": stats}
+    except Exception as e:
+        logger.error(f"Learning stats failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/learning/insights")
+async def get_learning_insights():
+    """Get current learning insights."""
+    if not ENHANCED_MODE or not learning_system:
+        raise HTTPException(status_code=501, detail="Learning system not available")
+    
+    try:
+        insights = learning_system.get_insights()
+        if insights:
+            return {"success": True, "insights": insights.__dict__}
+        else:
+            return {"success": False, "message": "No insights available yet"}
+    except Exception as e:
+        logger.error(f"Learning insights failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/learning/patterns/{goal_type}")
+async def get_patterns_for_goal_type(goal_type: str):
+    """Get successful patterns for a specific goal type."""
+    if not ENHANCED_MODE or not learning_system:
+        raise HTTPException(status_code=501, detail="Learning system not available")
+    
+    try:
+        pattern = learning_system.get_pattern_for_goal_type(goal_type)
+        if pattern:
+            return {"success": True, "pattern": pattern}
+        else:
+            return {"success": False, "message": f"No patterns found for {goal_type}"}
+    except Exception as e:
+        logger.error(f"Pattern lookup failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/learning/force-update")
+async def force_learning_update():
+    """Force update of learning insights."""
+    if not ENHANCED_MODE or not learning_system:
+        raise HTTPException(status_code=501, detail="Learning system not available")
+    
+    try:
+        learning_system._update_insights()
+        return {"success": True, "message": "Insights updated"}
+    except Exception as e:
+        logger.error(f"Force update failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Existing API endpoints
 @app.post("/confirm/{session_id}")
 async def confirm_destructive(session_id: str, action: str):
     """Confirm destructive operation for session."""
-    # This is a stub for human-in-the-loop confirmation
-    # In a full implementation, this would track pending confirmations
     return {"confirmed": True, "session_id": session_id, "action": action}
 
 
@@ -593,6 +910,17 @@ async def get_system_metrics():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/test/count")
+async def test_count_files():
+    """Simple test endpoint that bypasses the planner."""
+    try:
+        from .tools.core_fs import count_files
+        result = count_files(dir="~/Desktop", limit=0)
+        return {"success": True, "result": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 # Serve static files for UI (if built)
 try:
     app.mount("/", StaticFiles(directory="ui/dist", html=True), name="static")
@@ -608,12 +936,3 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
-@app.get("/test/count")
-async def test_count_files():
-    """Simple test endpoint that bypasses the planner."""
-    try:
-        from .tools.core_fs import count_files
-        result = count_files(dir="~/Desktop", limit=0)
-        return {"success": True, "result": result}
-    except Exception as e:
-        return {"success": False, "error": str(e)}

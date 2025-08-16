@@ -1,6 +1,7 @@
 """Server-Sent Events utilities for streaming agent responses."""
 import json
 import asyncio
+import time
 from typing import Dict, Any, AsyncGenerator, Optional
 from enum import Enum
 
@@ -18,6 +19,9 @@ class SSEEvent(Enum):
     FINAL = "final"
     ERROR = "error"
     CANCEL = "cancel"
+    # Add new event types
+    THINKING = "thinking"
+    REASONING = "reasoning"
 
 
 class SSEManager:
@@ -37,20 +41,26 @@ class SSEManager:
             'data': {'cancelled': True, 'step': self.step}
         }))
     
-    async def emit(self, event_type: SSEEvent, data: Dict[str, Any], step: Optional[int] = None):
+    async def emit(self, event_type, data: Dict[str, Any], step: Optional[int] = None):
         """Emit an SSE event with proper formatting."""
-        if self.cancelled and event_type != SSEEvent.CANCEL:
+        if self.cancelled and (isinstance(event_type, SSEEvent) and event_type != SSEEvent.CANCEL):
             return
         
         if step is not None:
             self.step = step
         
+        # Handle both string and enum event types
+        if isinstance(event_type, SSEEvent):
+            event_name = event_type.value
+        else:
+            event_name = str(event_type)
+        
         event_data = {
-            'event': event_type.value,
+            'event': event_name,
             'data': {
                 'session_id': self.session_id,
                 'step': self.step,
-                'timestamp': asyncio.get_event_loop().time(),
+                'timestamp': time.time(),
                 **data
             }
         }
@@ -81,7 +91,7 @@ class SSEManager:
                     
             except asyncio.TimeoutError:
                 # Send keepalive
-                yield format_sse_event('keepalive', {'timestamp': asyncio.get_event_loop().time()})
+                yield format_sse_event('keepalive', {'timestamp': time.time()})
             except Exception as e:
                 # Send error and end stream
                 yield format_sse_event(SSEEvent.ERROR.value, {'error': str(e)})
@@ -128,7 +138,7 @@ async def emit_exec(sse: SSEManager, tool_name: str, args: Dict[str, Any], batch
     event_data = {
         'tool': tool_name,
         'args': args,
-        'started_at': asyncio.get_event_loop().time()
+        'started_at': time.time()
     }
     
     if batch_idx is not None:
@@ -213,5 +223,29 @@ async def emit_final(sse: SSEManager, result: str, success: bool, confidence: fl
         'success': success,
         'confidence': confidence,
         'next_steps': next_steps or [],
-        'completed_at': asyncio.get_event_loop().time()
+        'completed_at': time.time()
     })
+
+
+# Enhanced SSE functions for thinking
+async def emit_thinking(sse_manager: SSEManager, thought: str, step_type: str = "general"):
+    """Emit a thinking step with human-readable content."""
+    data = {
+        "thought": thought,
+        "step_type": step_type,
+        "timestamp": time.time()
+    }
+    await sse_manager.emit(SSEEvent.THINKING, data)
+
+
+async def emit_reasoning(sse_manager: SSEManager, step: str, reasoning: str, details: Dict = None):
+    """Emit human-readable reasoning step."""
+    data = {
+        "step": step,
+        "reasoning": reasoning,
+        "timestamp": time.time()
+    }
+    if details:
+        data["details"] = details
+    
+    await sse_manager.emit(SSEEvent.REASONING, data)

@@ -3,7 +3,8 @@
 > vite
 
 
-  VITE v5.4.19  ready in 125 ms
+  VITE v5.4.19  ready in 287 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://192.168.86.59:5173/
+9:37:08 PM [vite] hmr update /src/App.tsx
