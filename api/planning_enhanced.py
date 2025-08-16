@@ -510,7 +510,7 @@ Respond in JSON format:
             # If we have observations, assume some progress was made
             return {
                 "finish": True,
-                "result": f"Completed analysis for: {goal}",
+                "result": observation,
                 "confidence": 0.6
             }
         else:

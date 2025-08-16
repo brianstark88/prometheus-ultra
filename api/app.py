@@ -71,16 +71,68 @@ async def emit_reasoning(sse_manager: SSEManager, step: str, reasoning: str, det
 
 
 def is_knowledge_question(goal: str) -> bool:
-    """Detect if this is a knowledge question that doesn't need tools."""
-    knowledge_indicators = [
-        'how many', 'what is', 'what are', 'who is', 'when did', 'where is',
-        'why does', 'explain', 'define', 'what does', 'how does',
-        'stars in the solar system', 'planets in', 'capital of',
-        'who invented', 'when was', 'how tall', 'how old'
+    """
+    Detect if this is a knowledge question vs an action task.
+    Be comprehensive like Claude - detect questions that need answers, not actions.
+    """
+    goal_lower = goal.lower()
+    
+    # Question words that typically indicate knowledge queries
+    question_starters = [
+        'what', 'who', 'when', 'where', 'why', 'how', 'which',
+        'can you explain', 'tell me', 'do you know', 'is it true',
+        'explain', 'describe', 'define'
     ]
     
-    goal_lower = goal.lower()
-    return any(indicator in goal_lower for indicator in knowledge_indicators)
+    # Check if it starts with a question word
+    starts_with_question = any(goal_lower.startswith(word) for word in question_starters)
+    
+    # Knowledge indicators anywhere in the text
+    knowledge_indicators = [
+        'how many', 'how much', 'what is', 'what are', 'who is', 'who are',
+        'when did', 'when was', 'when is', 'where is', 'where are',
+        'why does', 'why is', 'why are', 'what does', 'how does',
+        'explain', 'define', 'describe', 'tell me about',
+        'what\'s the', 'who\'s the', 'when\'s the', 'where\'s the',
+        # Specific domains
+        'capital of', 'population of', 'temperature', 'distance',
+        'invented', 'discovered', 'founded', 'created', 'built',
+        # Science/astronomy
+        'planets', 'moons', 'stars', 'solar system', 'galaxy',
+        'chemical', 'element', 'atomic', 'formula',
+        # Math/calculations (simple ones)
+        'calculate', 'what equals', 'sum of', 'difference between',
+        # Facts
+        'fact about', 'true that', 'correct that', 'accurate that'
+    ]
+    
+    has_knowledge_indicator = any(indicator in goal_lower for indicator in knowledge_indicators)
+    
+    # Action words that indicate this is NOT a knowledge question
+    action_indicators = [
+        'count files', 'list files', 'delete', 'create', 'modify',
+        'find files', 'search my', 'in my', 'on my',
+        'show me files', 'check my', 'look in',
+        '/users/', '/home/', '~/','desktop', 'documents folder'
+    ]
+    
+    has_action_indicator = any(indicator in goal_lower for indicator in action_indicators)
+    
+    # Ends with question mark is a strong signal
+    ends_with_question = goal.strip().endswith('?')
+    
+    # Decision logic - be liberal about what counts as knowledge
+    is_knowledge = (
+        (starts_with_question or has_knowledge_indicator or ends_with_question) 
+        and not has_action_indicator
+    )
+    
+    if is_knowledge:
+        logger.info(f"Detected knowledge question: {goal}")
+    else:
+        logger.info(f"Detected action task: {goal}")
+    
+    return is_knowledge
 
 
 def create_knowledge_plan(goal: str) -> Dict[str, Any]:
@@ -105,7 +157,7 @@ def is_simple_goal(goal: str) -> bool:
     """Check if goal can be handled by simple planner."""
     simple_patterns = [
         'count files', 'list files', 'count dirs',
-        'how many', 'show me files', 'number of'
+        'how many files', 'show me files', 'number of'
     ]
     return any(pattern in goal.lower() for pattern in simple_patterns)
 
@@ -376,18 +428,97 @@ async def run_enhanced_agent_loop(
     destructive: bool,
     session_id: str
 ):
-    """Enhanced agent loop with visible reasoning."""
+    """Enhanced agent loop that acts like Claude - direct answers for questions, agent mode for tasks."""
     session_state = state_manager.get_session(session_id)
     session_metrics = metrics_manager.get_session_metrics(session_id)
     session_metrics.start_time = time.time()
     tool_registry = get_tool_registry()
     
-    step = 0
-    
     try:
         await emit_status(sse, "starting", {"goal": goal, "max_steps": max_steps})
         await emit_thinking(sse, f"🎯 Goal: {goal}", "goal_analysis")
         
+        # ============ CLAUDE MODE: DIRECT ANSWER FOR KNOWLEDGE QUESTIONS ============
+        if is_knowledge_question(goal):
+            await emit_thinking(sse, "💭 This is a knowledge question - I'll answer it directly", "knowledge_mode")
+            await emit_status(sse, "answering")
+            
+            # Use analyze tool directly without all the agent ceremony
+            from .tools.core_llm import analyze
+            
+            try:
+                # Get the answer
+                answer = await analyze(
+                    prompt=f"Answer this question accurately and completely: {goal}",
+                    context="Provide a direct, factual answer."
+                )
+                
+                # Validate we got a real answer
+                if isinstance(answer, str) and len(answer) > 20 and "error" not in answer.lower():
+                    # Success! Emit minimal events and complete
+                    await emit_obs(sse, answer, "knowledge_answer", None)
+                    
+                    # Record in session
+                    session_state.add_observation(answer)
+                    session_state.add_fact(f"Answered: {goal[:50]}...")
+                    
+                    # Simple metrics
+                    session_metrics.record_tool_usage("analyze")
+                    session_metrics.record_confidence(0.95)
+                    
+                    # Complete immediately
+                    await emit_thinking(sse, "✅ Question answered!", "completion")
+                    await complete_session_with_learning(
+                        sse, session_id, goal, session_state, session_metrics,
+                        answer, True, 0.95
+                    )
+                    return  # Done! No agent loop needed
+                    
+                else:
+                    # Failed to get answer, fall through to agent mode
+                    await emit_thinking(sse, "⚠️ Couldn't get direct answer, switching to agent mode", "fallback")
+                    
+            except Exception as e:
+                logger.warning(f"Direct answer failed: {e}")
+                await emit_thinking(sse, "⚠️ Direct answer failed, using agent mode", "fallback")
+        
+        # ============ FILE/SYSTEM OPERATIONS: FAST MODE ============
+        elif is_simple_goal(goal):
+            await emit_thinking(sse, "⚡ This is a simple file operation - using fast mode", "fast_mode")
+            await emit_status(sse, "executing")
+            
+            # Get simple plan
+            simple_plan = create_simple_plan(goal)
+            if simple_plan and simple_plan.get('confidence', 0) > 0.7:
+                tool_name = simple_plan['next_action']
+                args = simple_plan['args']
+                
+                # Execute directly
+                observation, error_class, signature = await execute_single_tool(
+                    sse, tool_name, args, tool_registry, session_state, destructive
+                )
+                
+                if error_class is None:
+                    # Success! Complete immediately
+                    await emit_obs(sse, observation, signature, None)
+                    session_state.add_observation(str(observation))
+                    
+                    result_msg = f"Task complete: {observation}"
+                    if isinstance(observation, dict) and 'count' in observation:
+                        result_msg = f"Found {observation['count']} items"
+                    elif isinstance(observation, list):
+                        result_msg = f"Found {len(observation)} items"
+                    
+                    await complete_session_with_learning(
+                        sse, session_id, goal, session_state, session_metrics,
+                        result_msg, True, 0.9
+                    )
+                    return  # Done!
+        
+        # ============ COMPLEX TASKS: FULL AGENT MODE ============
+        await emit_thinking(sse, "🤖 This requires multiple steps - entering agent mode", "agent_mode")
+        
+        step = 0
         while step < max_steps:
             step += 1
             step_start_time = time.time()
@@ -481,7 +612,7 @@ async def run_enhanced_agent_loop(
                 if error_class:
                     await emit_thinking(sse, f"❌ Tool execution failed: {error_class}", "execution_error")
                 else:
-                    await emit_thinking(sse, f"✅ Tool executed successfully, got: {signature}", "execution_success")
+                    await emit_thinking(sse, f"✅ Tool executed successfully", "execution_success")
                 
                 await emit_obs(sse, observation, signature, error_class)
                 session_state.add_observation(str(observation))
@@ -534,7 +665,7 @@ async def run_enhanced_agent_loop(
             all_metrics = metrics_manager.collect_all_metrics(session_id)
             await emit_metrics(sse, all_metrics)
             
-            # ENHANCED VERIFIER with reasoning
+            # VERIFIER with reasoning
             await emit_thinking(sse, "🎯 Checking if I've accomplished the goal...", "verification_start")
             
             try:
@@ -560,11 +691,28 @@ async def run_enhanced_agent_loop(
             except Exception as e:
                 logger.error(f"Verifier failed: {e}")
                 await emit_thinking(sse, f"⚠️ Verification failed, using fallback: {str(e)}", "verification_error")
-                verification = {
-                    "finish": True,
-                    "result": "Task completed. The results are shown in the detailed information above.",
-                    "confidence": 0.6
-                }
+                
+                # Use last observation as result
+                if session_state.last_obs and len(session_state.last_obs) > 0:
+                    last_obs = str(session_state.last_obs[-1])
+                    if len(last_obs) > 20 and "error" not in last_obs.lower():
+                        verification = {
+                            "finish": True,
+                            "result": last_obs,
+                            "confidence": 0.6
+                        }
+                    else:
+                        verification = {
+                            "finish": True,
+                            "result": "Task completed. The results are shown in the detailed information above.",
+                            "confidence": 0.6
+                        }
+                else:
+                    verification = {
+                        "finish": True,
+                        "result": "Task completed. The results are shown in the detailed information above.",
+                        "confidence": 0.6
+                    }
             
             session_state.update_confidence(verification['confidence'])
             session_metrics.record_confidence(verification['confidence'])

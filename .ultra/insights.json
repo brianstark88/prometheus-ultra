@@ -1,0 +1,15 @@
+{
+  "successful_patterns": {},
+  "failure_patterns": {},
+  "optimal_temperatures": {},
+  "tool_success_rates": {
+    "analyze": 0.0425531914893617
+  },
+  "avg_completion_times": {
+    "counting": 13.538885116577148
+  },
+  "recommended_improvements": [
+    "Consider improving prompts for: analyze",
+    "Consider more conservative planning to improve success rate"
+  ]
+}

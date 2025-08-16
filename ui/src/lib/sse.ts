@@ -9,12 +9,6 @@ export interface SSEOptions {
   maxRetries?: number;
 }
 
-interface ThinkingStep {
-  thought: string;
-  step_type: string;
-  timestamp: number;
-}
-
 export class SSEClient {
   private eventSource: EventSource | null = null;
   private url: string;
