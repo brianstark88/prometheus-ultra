@@ -402,98 +402,149 @@ Respond in JSON format:
             logger.error(f"Enhanced critic failed: {e}")
             return {"approved": True, "changes": [], "reasoning": f"Critic error: {str(e)}"}
     
-    async def verify(
-        self,
-        goal: str,
-        recent_observations: List[str],
-        max_obs: int = 8
-    ) -> Dict[str, Any]:
-        """
-        Verify if the goal has been accomplished using enhanced LLM verification.
+    async def verify(self, goal: str, recent_observations: List[str], max_obs: int = 8) -> Dict[str, Any]:
+    """
+    Verify if the goal has been accomplished using enhanced LLM verification.
+    
+    Args:
+        goal: Original user goal
+        recent_observations: List of recent observations
+        max_obs: Maximum observations to consider
         
-        Args:
-            goal: Original user goal
-            recent_observations: List of recent observations
-            max_obs: Maximum observations to consider
+    Returns:
+        Verification result with finish decision and confidence
+    """
+    # Limit observations
+    obs_to_use = recent_observations[-max_obs:] if recent_observations else []
+    
+    # Format observations for prompt
+    obs_text = "\n".join(f"{i+1}. {obs}" for i, obs in enumerate(obs_to_use))
+    if not obs_text:
+        obs_text = "No observations available"
+    
+    # Get the most recent observation as the potential result
+    last_observation = obs_to_use[-1] if obs_to_use else "No result available"
+    
+    # Enhanced verification prompt for knowledge questions
+    if self._is_knowledge_question(goal):
+        # For knowledge questions, check if we have a proper answer
+        if obs_to_use and len(obs_to_use) > 0:
+            # The last observation should be the answer
+            answer = str(last_observation)
             
-        Returns:
-            Verification result with finish decision and confidence
-        """
-        # Limit observations
-        obs_to_use = recent_observations[-max_obs:] if recent_observations else []
+            # Quick validation - if it looks like a real answer, we're done
+            if len(answer) > 20 and "error" not in answer.lower():
+                return {
+                    "finish": True,
+                    "result": answer,  # Use the actual answer
+                    "confidence": 0.95,
+                    "success_level": "complete",
+                    "reasoning": "Knowledge question answered successfully"
+                }
         
-        # Format observations for prompt
-        obs_text = "\n".join(f"{i+1}. {obs}" for i, obs in enumerate(obs_to_use))
-        if not obs_text:
-            obs_text = "No observations available"
+        # If no good answer yet, need to continue
+        return {
+            "finish": False,
+            "result": "Still gathering information",
+            "confidence": 0.3,
+            "success_level": "partial",
+            "reasoning": "Knowledge question not yet fully answered"
+        }
+    
+    # For action tasks, check if the action was completed
+    if obs_to_use:
+        # Check for success indicators in the last observation
+        if isinstance(last_observation, str):
+            obs_lower = last_observation.lower()
+            
+            # Check for completion indicators
+            if any(indicator in obs_lower for indicator in ['found', 'complete', 'success', 'count']):
+                if 'error' not in obs_lower and 'failed' not in obs_lower:
+                    return {
+                        "finish": True,
+                        "result": last_observation,  # Use actual observation
+                        "confidence": 0.9,
+                        "success_level": "complete",
+                        "reasoning": "Task completed successfully based on observation"
+                    }
         
-        # Enhanced verification prompt for knowledge questions
-        if self._is_knowledge_question(goal):
-            prompt = f"""Verify if this knowledge question has been properly answered:
+        # Check if it's a dict with results
+        elif isinstance(last_observation, dict):
+            if 'count' in last_observation or 'result' in last_observation:
+                return {
+                    "finish": True,
+                    "result": str(last_observation),
+                    "confidence": 0.9,
+                    "success_level": "complete",
+                    "reasoning": "Task completed with structured result"
+                }
+    
+    # Try LLM verification as fallback
+    prompt = f"""Verify if this goal has been accomplished:
 
-Question: "{goal}"
+Goal: "{goal}"
 
 Recent observations:
 {obs_text}
 
-Instructions:
-1. Check if the observations contain a direct, factual answer to the question
-2. For "How many stars are in the solar system?" the correct answer is "one star (the Sun)"
-3. Rate confidence based on answer accuracy and completeness
-
 Respond in JSON format:
 {{
   "finish": true/false,
-  "result": "clear answer or explanation",
+  "result": "clear result or status",
   "confidence": 0.0-1.0,
   "success_level": "complete|partial|failed",
   "reasoning": "why this conclusion"
 }}"""
-        else:
-            # Use existing verifier prompt
-            prompt = self.verifier_prompt.format(
-                goal=goal,
-                obs_count=len(obs_to_use),
-                recent_observations=obs_text
-            )
-        
-        # Call LLM with JSON mode
-        payload = {
-            "prompt": prompt,
-            "options": {
-                "temperature": 0.1,
-                "format": "json",
-                "num_predict": 512
-            }
+    
+    # Call LLM with JSON mode
+    payload = {
+        "prompt": prompt,
+        "options": {
+            "temperature": 0.1,
+            "format": "json",
+            "num_predict": 512
         }
+    }
+    
+    try:
+        result = await self.fallback_manager.call_with_fallback(payload)
         
-        try:
-            result = await self.fallback_manager.call_with_fallback(payload)
-            
-            if not result['success']:
-                logger.warning(f"Enhanced verifier call failed: {result['error']}")
-                return self._create_fallback_verification(goal, obs_to_use)
-            
+        if result['success']:
             response_text = result['data']['response']
+            from .utils.json_loose import loads_loose
             verify_data = loads_loose(response_text)
             
-            # Validate verifier response
-            if 'finish' not in verify_data:
-                verify_data['finish'] = True  # Be more decisive
-            if 'result' not in verify_data:
-                verify_data['result'] = "Task completed based on available information"
-            if 'confidence' not in verify_data:
-                verify_data['confidence'] = 0.7
+            # Use actual observation as result if LLM didn't provide one
+            if 'result' not in verify_data or verify_data['result'] == "No result provided":
+                verify_data['result'] = last_observation
             
-            # Ensure confidence is between 0 and 1
-            verify_data['confidence'] = max(0.0, min(1.0, float(verify_data['confidence'])))
+            # Validate other fields
+            verify_data['finish'] = verify_data.get('finish', False)
+            verify_data['confidence'] = max(0.0, min(1.0, float(verify_data.get('confidence', 0.5))))
             
-            logger.info(f"Enhanced verification: finish={verify_data['finish']}, confidence={verify_data['confidence']}")
+            logger.info(f"LLM verification: finish={verify_data['finish']}, confidence={verify_data['confidence']}")
             return verify_data
-        
-        except Exception as e:
-            logger.error(f"Enhanced verifier failed: {e}")
-            return self._create_fallback_verification(goal, obs_to_use)
+            
+    except Exception as e:
+        logger.error(f"LLM verification failed: {e}")
+    
+    # Final fallback - use simple heuristics
+    if obs_to_use and 'error' not in str(last_observation).lower():
+        return {
+            "finish": True,
+            "result": last_observation,
+            "confidence": 0.6,
+            "success_level": "partial",
+            "reasoning": "Assuming completion based on presence of observations"
+        }
+    else:
+        return {
+            "finish": False,
+            "result": "Task in progress",
+            "confidence": 0.3,
+            "success_level": "partial",
+            "reasoning": "No clear completion indicator found"
+        }
     
     def _is_knowledge_question(self, goal: str) -> bool:
         """Check if this is a knowledge question."""

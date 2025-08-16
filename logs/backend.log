@@ -1,77 +1,268 @@
 INFO:     Will watch for changes in these directories: ['/Users/brian/agent_gptoss20b']
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [36752] using WatchFiles
-2025-08-15 23:37:13,154 - api.planning_enhanced - ERROR - Failed to load prompt enhanced_critic.txt: [Errno 2] No such file or directory: 'api/prompts/enhanced_critic.txt'
-2025-08-15 23:37:13,154 - api.planning_enhanced - ERROR - Failed to load prompt enhanced_verifier.txt: [Errno 2] No such file or directory: 'api/prompts/enhanced_verifier.txt'
-2025-08-15 23:37:13,154 - api.planning_enhanced - ERROR - Failed to load prompt chain_detector.txt: [Errno 2] No such file or directory: 'api/prompts/chain_detector.txt'
-2025-08-15 23:37:13,154 - api.utils.learning - INFO - Loaded 10 session outcomes
-2025-08-15 23:37:13,154 - api.utils.learning - INFO - Loaded existing insights
-2025-08-15 23:37:13,155 - api.app - INFO - Enhanced GOD-MODE features enabled
-2025-08-15 23:37:13,157 - api.app - INFO - No UI build found, skipping static file serving
-INFO:     Started server process [36756]
+INFO:     Started reloader process [40410] using WatchFiles
+2025-08-16 00:17:58,814 - api.planning_enhanced - ERROR - Failed to load prompt enhanced_critic.txt: [Errno 2] No such file or directory: 'api/prompts/enhanced_critic.txt'
+2025-08-16 00:17:58,814 - api.planning_enhanced - ERROR - Failed to load prompt enhanced_verifier.txt: [Errno 2] No such file or directory: 'api/prompts/enhanced_verifier.txt'
+2025-08-16 00:17:58,814 - api.planning_enhanced - ERROR - Failed to load prompt chain_detector.txt: [Errno 2] No such file or directory: 'api/prompts/chain_detector.txt'
+2025-08-16 00:17:58,814 - api.utils.learning - INFO - Loaded 14 session outcomes
+2025-08-16 00:17:58,814 - api.utils.learning - INFO - Loaded existing insights
+2025-08-16 00:17:58,814 - api.app - INFO - Enhanced GOD-MODE features enabled
+2025-08-16 00:17:58,815 - api.app - INFO - No UI build found, skipping static file serving
+INFO:     Started server process [40415]
 INFO:     Waiting for application startup.
-2025-08-15 23:37:13,157 - api.app - INFO - Starting GOD-MODE Agent...
-2025-08-15 23:37:13,157 - api.tools - WARNING - No tool config found, loading defaults
-2025-08-15 23:37:13,184 - api.app - INFO - Initialized 6 tools
+2025-08-16 00:17:58,815 - api.app - INFO - Starting GOD-MODE Agent...
+2025-08-16 00:17:58,815 - api.tools - WARNING - No tool config found, loading defaults
+2025-08-16 00:17:58,840 - api.app - INFO - Initialized 6 tools
 INFO:     Application startup complete.
-2025-08-15 23:37:13,880 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:37:16,439 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:16,460 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:37:20,232 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:51725 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51777 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51777 - "GET /health HTTP/1.1" 200 OK
-2025-08-15 23:37:29,214 - api.app - INFO - Detected knowledge question: How many moons does Mars have?
-INFO:     127.0.0.1:51788 - "GET /auto/stream?goal=How%20many%20moons%20does%20Mars%20have? HTTP/1.1" 200 OK
-2025-08-15 23:37:29,248 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:37:29,348 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:29,581 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:36,229 - api.utils.fallback - WARNING - Model llama2:7b failed: Extra data: line 2 column 1 (char 94)
-2025-08-15 23:37:36,251 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:37:36,343 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:36,575 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:39,391 - api.utils.fallback - WARNING - Model mistral:7b failed: Extra data: line 2 column 1 (char 97)
-2025-08-15 23:37:39,391 - api.app - INFO - Detected knowledge question: How many moons does Mars have?
-2025-08-15 23:37:40,070 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:44,517 - api.utils.fallback - WARNING - Model llama2:7b failed: Extra data: line 2 column 1 (char 94)
-2025-08-15 23:37:45,309 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:47,308 - api.utils.fallback - WARNING - Model mistral:7b failed: Extra data: line 2 column 1 (char 95)
-2025-08-15 23:37:47,309 - api.planning_enhanced - WARNING - Enhanced critic call failed: All models failed. Last error: Extra data: line 2 column 1 (char 95)
-2025-08-15 23:37:47,324 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:37:47,471 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:47,741 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:53,565 - api.utils.fallback - WARNING - Model llama2:7b failed: Extra data: line 2 column 1 (char 94)
-2025-08-15 23:37:53,578 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:37:53,779 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:54,003 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:37:57,930 - api.utils.fallback - WARNING - Model mistral:7b failed: Extra data: line 2 column 1 (char 97)
-2025-08-15 23:37:58,155 - api.planning_enhanced - WARNING - Enhanced verifier call failed: All models failed. Last error: Extra data: line 2 column 1 (char 95)
-2025-08-15 23:37:58,156 - api.utils.learning - INFO - Logged session outcome: 32d24666-a967-4c8b-854a-920ce89eb75a (success=True)
-2025-08-15 23:38:20,825 - api.app - INFO - Detected knowledge question: How many stars are there in the solar system?
-INFO:     127.0.0.1:51778 - "GET /auto/stream?goal=How%20many%20stars%20are%20there%20in%20the%20solar%20system%3F HTTP/1.1" 200 OK
-2025-08-15 23:38:20,861 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:38:21,044 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:38:21,659 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:38:22,456 - api.utils.fallback - WARNING - Model llama2:7b failed: Extra data: line 2 column 1 (char 97)
-2025-08-15 23:38:22,475 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:38:22,680 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:38:23,360 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:38:24,391 - api.utils.fallback - WARNING - Model mistral:7b failed: Extra data: line 2 column 1 (char 99)
-2025-08-15 23:38:24,391 - api.app - INFO - Detected knowledge question: How many stars are there in the solar system?
-2025-08-15 23:38:24,392 - api.planning_enhanced - WARNING - Enhanced critic call failed: All models failed. Last error: Extra data: line 2 column 1 (char 95)
-2025-08-15 23:38:24,412 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:38:24,547 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:38:25,150 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:38:33,282 - api.utils.fallback - WARNING - Model llama2:7b failed: Extra data: line 2 column 1 (char 96)
-2025-08-15 23:38:33,303 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
-2025-08-15 23:38:33,506 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:38:34,178 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
-2025-08-15 23:38:35,218 - api.utils.fallback - WARNING - Model mistral:7b failed: Extra data: line 2 column 1 (char 98)
-2025-08-15 23:38:35,396 - api.planning_enhanced - WARNING - Enhanced verifier call failed: All models failed. Last error: Extra data: line 2 column 1 (char 95)
-2025-08-15 23:38:35,397 - api.utils.learning - INFO - Logged session outcome: 1306cdc5-0027-4828-aa82-f78e95c27d17 (success=True)
+2025-08-16 00:17:59,578 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-08-16 00:18:02,874 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-08-16 00:18:02,900 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-08-16 00:18:06,956 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63648 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63744 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63744 - "GET /health HTTP/1.1" 200 OK
+2025-08-16 00:18:23,607 - api.app - INFO - Intent: CONVERSATIONAL - Question about knowledge
+INFO:     127.0.0.1:63816 - "GET /auto/stream?goal=How%20many%20stars%20are%20there%20in%20the%20solar%20system%3F HTTP/1.1" 200 OK
+2025-08-16 00:18:23,654 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-08-16 00:18:23,763 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-08-16 00:18:24,382 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-08-16 00:18:27,208 - api.utils.fallback - WARNING - Model llama2:7b failed: Extra data: line 2 column 1 (char 94)
+2025-08-16 00:18:27,232 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-08-16 00:18:27,305 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-08-16 00:18:27,988 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-08-16 00:18:29,031 - api.utils.fallback - WARNING - Model mistral:7b failed: Extra data: line 2 column 1 (char 99)
+2025-08-16 00:18:29,033 - api.utils.learning - INFO - Logged session outcome: 8a54e0fe-dd0c-4561-83b9-168a1d48211f (success=True)
+WARNING:  WatchFiles detected changes in 'api/planning_enhanced.py'. Reloading...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
-2025-08-15 23:39:48,905 - api.app - INFO - Shutting down GOD-MODE Agent...
+2025-08-16 00:21:02,699 - api.app - INFO - Shutting down GOD-MODE Agent...
 INFO:     Application shutdown complete.
-INFO:     Finished server process [36756]
-INFO:     Stopping reloader process [36752]
+INFO:     Finished server process [40415]
+2025-08-16 00:21:03,160 - api.planning_enhanced - ERROR - Failed to load prompt enhanced_critic.txt: [Errno 2] No such file or directory: 'api/prompts/enhanced_critic.txt'
+2025-08-16 00:21:03,160 - api.planning_enhanced - ERROR - Failed to load prompt enhanced_verifier.txt: [Errno 2] No such file or directory: 'api/prompts/enhanced_verifier.txt'
+2025-08-16 00:21:03,160 - api.planning_enhanced - ERROR - Failed to load prompt chain_detector.txt: [Errno 2] No such file or directory: 'api/prompts/chain_detector.txt'
+2025-08-16 00:21:03,160 - api.utils.learning - INFO - Loaded 15 session outcomes
+2025-08-16 00:21:03,160 - api.utils.learning - INFO - Loaded existing insights
+2025-08-16 00:21:03,160 - api.app - INFO - Enhanced GOD-MODE features enabled
+2025-08-16 00:21:03,162 - api.app - INFO - No UI build found, skipping static file serving
+INFO:     Started server process [40889]
+INFO:     Waiting for application startup.
+2025-08-16 00:21:03,162 - api.app - INFO - Starting GOD-MODE Agent...
+2025-08-16 00:21:03,162 - api.tools - WARNING - No tool config found, loading defaults
+2025-08-16 00:21:03,192 - api.app - INFO - Initialized 6 tools
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'api/planning_enhanced.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-16 00:24:02,244 - api.app - INFO - Shutting down GOD-MODE Agent...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [40889]
+Process SpawnProcess-3:
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/_subprocess.py", line 76, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 61, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 68, in serve
+    config.load()
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/config.py", line 467, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/importer.py", line 21, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/brian/agent_gptoss20b/api/app.py", line 29, in <module>
+    from .planning_enhanced import EnhancedPlanningAgent
+  File "/Users/brian/agent_gptoss20b/api/planning_enhanced.py", line 406
+    """
+    ^^^
+IndentationError: expected an indented block after function definition on line 405
+WARNING:  WatchFiles detected changes in 'api/app.py'. Reloading...
+Process SpawnProcess-4:
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/_subprocess.py", line 76, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 61, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 68, in serve
+    config.load()
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/config.py", line 467, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/importer.py", line 21, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/brian/agent_gptoss20b/api/app.py", line 29, in <module>
+    from .planning_enhanced import EnhancedPlanningAgent
+  File "/Users/brian/agent_gptoss20b/api/planning_enhanced.py", line 406
+    """
+    ^^^
+IndentationError: expected an indented block after function definition on line 405
+WARNING:  WatchFiles detected changes in 'api/app.py'. Reloading...
+Process SpawnProcess-5:
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/_subprocess.py", line 76, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 61, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 68, in serve
+    config.load()
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/config.py", line 467, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/importer.py", line 21, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/brian/agent_gptoss20b/api/app.py", line 29, in <module>
+    from .planning_enhanced import EnhancedPlanningAgent
+  File "/Users/brian/agent_gptoss20b/api/planning_enhanced.py", line 406
+    """
+    ^^^
+IndentationError: expected an indented block after function definition on line 405
+WARNING:  WatchFiles detected changes in 'api/app.py'. Reloading...
+Process SpawnProcess-6:
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/_subprocess.py", line 76, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 61, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 68, in serve
+    config.load()
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/config.py", line 467, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/importer.py", line 21, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/brian/agent_gptoss20b/api/app.py", line 29, in <module>
+    from .planning_enhanced import EnhancedPlanningAgent
+  File "/Users/brian/agent_gptoss20b/api/planning_enhanced.py", line 406
+    """
+    ^^^
+IndentationError: expected an indented block after function definition on line 405
+WARNING:  WatchFiles detected changes in 'api/app.py'. Reloading...
+Process SpawnProcess-7:
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/_subprocess.py", line 76, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 61, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/server.py", line 68, in serve
+    config.load()
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/config.py", line 467, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/brian/agent_gptoss20b/venv/lib/python3.11/site-packages/uvicorn/importer.py", line 21, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/brian/agent_gptoss20b/api/app.py", line 29, in <module>
+    from .planning_enhanced import EnhancedPlanningAgent
+  File "/Users/brian/agent_gptoss20b/api/planning_enhanced.py", line 406
+    """
+    ^^^
+IndentationError: expected an indented block after function definition on line 405
